@@ -1,5 +1,8 @@
-I built a toy app that allows the user to label time series segments using key presses. It may be used in scenarios such as labeling a signal by second-level segments, or correcting predicted segment labels output by a machine learning model. There are three feature highlights of this toy app:
+I built a toy app that allows the user to label time series segments using key presses. It may be used in scenarios such as labeling a signal by second-level segments, or correcting predicted segment labels output by a machine learning model. 
 
+https://github.com/user-attachments/assets/83dc2413-1924-4b1a-9656-f20073857816
+
+There are three feature highlights of this toy app:
 1. It allows the user to navigate the time series data using the Left/Right arrow keys.
 2. It allows the user to label the selected segments using number keys.
 3. It has a Undo button that can undo the user’s previous labeling.
