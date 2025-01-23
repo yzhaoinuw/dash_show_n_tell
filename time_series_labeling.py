@@ -14,20 +14,22 @@ from plotly.subplots import make_subplots
 
 import dash
 from dash.exceptions import PreventUpdate
-from dash_extensions import EventListener
 from dash import Dash, dcc, html, ctx, Patch
 from dash.dependencies import Input, Output, State
+
+from dash_extensions import EventListener
 
 
 def open_browser(port):
     webbrowser.open_new(f"http://127.0.0.1:{port}/")
-    
-class Data():
+
+
+class Data:
     def __init__(self, N=10240, frequency=512):
         self.N = N
         self.frequency = frequency
         self.time_start = 0
-        self.time_end = int(np.ceil(N/frequency))
+        self.time_end = int(np.ceil(N / frequency))
         self.time = np.linspace(self.time_start, self.time_end, num=self.N)
         self.signal = self.initialize_signal()
         self.labels = self.initialize_labels()
@@ -37,18 +39,18 @@ class Data():
         noise = np.random.normal(size=self.N)
         signal = np.sum(
             [
-                 0.5 * np.cos(1/3 * np.pi + 2/64 * np.pi * x),
-                 0.4 * np.sin(2/50 * np.pi * x),
-                 0.1 * noise
-             ],
-            axis=0
+                0.5 * np.cos(1 / 3 * np.pi + 2 / 64 * np.pi * x),
+                0.4 * np.sin(2 / 50 * np.pi * x),
+                0.1 * noise,
+            ],
+            axis=0,
         )
         mask = np.ones(self.N)
         mask[1500:3000] = 0.05
         mask[6000:8000] = 0.5
         signal *= mask
         return signal
-        
+
     def initialize_labels(self):
         signal_reshaped = np.reshape(self.signal, (-1, self.frequency))
         labels = np.zeros(self.time_end)
@@ -59,10 +61,10 @@ class Data():
         labels[label_2_ind] = 2
         labels = np.expand_dims(labels, 0)
         return labels
-        
-    
+
+
 def create_fig(data):
-    fig = make_subplots(rows=1,cols=1)
+    fig = make_subplots(rows=1, cols=1)
     fig.add_trace(
         go.Scattergl(
             x=data.time,
@@ -89,7 +91,7 @@ def create_fig(data):
             row=1,
             col=1,
         )
-    
+
     labels = go.Heatmap(
         x0=0.5,
         dx=1,
@@ -129,27 +131,34 @@ def create_fig(data):
         dragmode="select",
         clickmode="event",
     )
-    fig.update_xaxes(range=[data.time_start, data.time_end], title_text="<b>Time (s)</b>", row=1, col=1)
+    fig.update_xaxes(
+        range=[data.time_start, data.time_end],
+        title_text="<b>Time (s)</b>",
+        row=1,
+        col=1,
+    )
     fig.update_yaxes(range=[-2, 2], fixedrange=True, title_text="<b></b>", row=1, col=1)
     return fig
 
 
-#%%
+# %%
 label_colors = ["rgb(124, 124, 251)", "rgb(251, 124, 124)", "rgb(123, 251, 123)"]
 colorscale = [[0, label_colors[0]], [0.5, label_colors[1]], [1, label_colors[2]]]
 
-graph = dcc.Graph(id="graph", config={"scrollZoom": True,"editable": False})
+graph = dcc.Graph(id="graph", config={"scrollZoom": True, "editable": False})
 box_select_store = dcc.Store(id="box-select-store")
 annotation_store = dcc.Store(id="annotation-store")
 annotation_history_store = dcc.Store(id="annotation-history-store", data=[])
 annotation_message = html.Div(id="annotation-message")
-keyboard_event_listener = EventListener(id="keyboard", events=[{"event": "keydown", "props": ["key"]}])
-undo_button = html.Button("Undo Annotation", id="undo-button", style={"display": "none"})
-#debug_message = html.Div(id="debug-message")
-
-app = Dash(
-    __name__, title="Event Annotation App", suppress_callback_exceptions=True
+keyboard_event_listener = EventListener(
+    id="keyboard", events=[{"event": "keydown", "props": ["key"]}]
 )
+undo_button = html.Button(
+    "Undo Annotation", id="undo-button", style={"display": "none"}
+)
+# debug_message = html.Div(id="debug-message")
+
+app = Dash(__name__, title="Event Annotation App", suppress_callback_exceptions=True)
 
 # pan_figures using arrow keys
 app.clientside_callback(
@@ -206,7 +215,7 @@ app.clientside_callback(
 )
 def read_box_select(box_select, figure):
     selections = figure["layout"].get("selections")
-    #dragmode = figure["layout"]["dragmode"]
+    # dragmode = figure["layout"]["dragmode"]
     if not selections:
         return [], dash.no_update, ""
 
@@ -215,10 +224,14 @@ def read_box_select(box_select, figure):
     if len(selections) > 1:
         selections.pop(0)
 
-    patched_figure["layout"]["selections"] = selections  # patial property update: https://dash.plotly.com/partial-properties#update
+    patched_figure["layout"][
+        "selections"
+    ] = selections  # patial property update: https://dash.plotly.com/partial-properties#update
 
     # take the min as start and max as end so that how the box is drawn doesn't matter
-    start, end = min(selections[0]["x0"], selections[0]["x1"]), max(selections[0]["x0"], selections[0]["x1"])
+    start, end = min(selections[0]["x0"], selections[0]["x1"]), max(
+        selections[0]["x0"], selections[0]["x1"]
+    )
     duration = len(figure["data"][-1]["z"][0])
 
     if end < 0 or start > duration:
@@ -228,7 +241,9 @@ def read_box_select(box_select, figure):
     start_round = max(start_round, 0)
     end_round = min(end_round, duration)
     if start_round == end_round:
-        if (start_round - start > end - end_round):  # spanning over two consecutive seconds
+        if (
+            start_round - start > end - end_round
+        ):  # spanning over two consecutive seconds
             end_round = np.ceil(start)
             start_round = np.floor(start)
         else:
@@ -242,6 +257,7 @@ def read_box_select(box_select, figure):
         patched_figure,
         "Draw a box to annotate. Press 1 for Blue, 2 for Coral, 3 for Green.",
     )
+
 
 @app.callback(
     Output("graph", "figure", allow_duplicate=True),
@@ -263,7 +279,9 @@ def update_labels(box_select_range, keyboard_press, keyboard_event, figure):
     label = int(label) - 1
     start, end = box_select_range
     # If the annotation does not change anything, don't add to history
-    if (figure["data"][-1]["z"][0][start:end] == np.array([label] * (end - start))).all():
+    if (
+        figure["data"][-1]["z"][0][start:end] == np.array([label] * (end - start))
+    ).all():
         raise PreventUpdate
 
     patched_figure = Patch()
@@ -276,6 +294,7 @@ def update_labels(box_select_range, keyboard_press, keyboard_event, figure):
 
     return patched_figure, (start, end, prev_labels)
 
+
 @app.callback(
     Output("undo-button", "style"),
     Output("annotation-history-store", "data", allow_duplicate=True),
@@ -287,10 +306,11 @@ def update_labels(box_select_range, keyboard_press, keyboard_event, figure):
 def write_annotation_history(annotation, annotation_history, figure):
     """write to annotation history and make undo button availabe"""
     start, end, prev_labels = annotation
-    annotation_history.append((start,end,prev_labels))
+    annotation_history.append((start, end, prev_labels))
     if len(annotation_history) > 3:
         annotation_history.pop(0)
     return {"display": "block"}, annotation_history
+
 
 @app.callback(
     Output("graph", "figure", allow_duplicate=True),
@@ -325,14 +345,14 @@ if __name__ == "__main__":
     graph.figure = figure
     app.layout = html.Div(
         children=[
-            graph, 
+            graph,
             undo_button,
-            box_select_store, 
-            annotation_store, 
+            box_select_store,
+            annotation_store,
             annotation_history_store,
-            annotation_message, 
+            annotation_message,
             keyboard_event_listener,
-            #debug_message,
+            # debug_message,
         ]
     )
     Timer(1, partial(open_browser, PORT)).start()
