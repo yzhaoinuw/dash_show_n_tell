@@ -5,8 +5,6 @@ Created on Wed Jan 15 09:49:08 2025
 @author: yzhao
 """
 
-import webbrowser
-
 import numpy as np
 
 import plotly.graph_objects as go
@@ -18,10 +16,6 @@ from dash import Dash, dcc, html, ctx, Patch
 from dash.dependencies import Input, Output, State
 
 from dash_extensions import EventListener
-
-
-def open_browser(port):
-    webbrowser.open_new(f"http://127.0.0.1:{port}/")
 
 
 class Data:
@@ -160,6 +154,22 @@ undo_button = html.Button(
 
 app = Dash(
     __name__, title="Time Series Labeling App", suppress_callback_exceptions=True
+)
+np.random.seed(0)
+data = Data()
+figure = create_fig(data)
+graph.figure = figure
+app.layout = html.Div(
+    children=[
+        graph,
+        undo_button,
+        box_select_store,
+        annotation_store,
+        annotation_history_store,
+        annotation_message,
+        keyboard_event_listener,
+        # debug_message,
+    ]
 )
 
 # pan_figures using arrow keys
@@ -334,28 +344,3 @@ def undo_annotation(n_clicks, annotation_history, figure):
     if not annotation_history:
         return patched_figure, {"display": "none"}, annotation_history
     return patched_figure, {"display": "block"}, annotation_history
-
-
-if __name__ == "__main__":
-    from threading import Timer
-    from functools import partial
-
-    np.random.seed(0)
-    PORT = 8050
-    data = Data()
-    figure = create_fig(data)
-    graph.figure = figure
-    app.layout = html.Div(
-        children=[
-            graph,
-            undo_button,
-            box_select_store,
-            annotation_store,
-            annotation_history_store,
-            annotation_message,
-            keyboard_event_listener,
-            # debug_message,
-        ]
-    )
-    Timer(1, partial(open_browser, PORT)).start()
-    app.run_server(debug=True, use_reloader=False)
