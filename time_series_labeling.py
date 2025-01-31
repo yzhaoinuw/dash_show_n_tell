@@ -191,11 +191,11 @@ app.clientside_callback(
         return dash_clientside.no_update;
     }
     """,
-    Output("graph", "figure", allow_duplicate=True),
+    Output("graph", "figure"),
     Input("keyboard", "n_events"),
     State("keyboard", "event"),
     State("graph", "figure"),
-    prevent_initial_call=True,
+    # prevent_initial_call=True,
 )
 
 # pan_figures using arrow keys
@@ -233,7 +233,7 @@ app.clientside_callback(
         return [dash_clientside.no_update, dash_clientside.no_update];
     }
     """,
-    Output("graph", "figure"),
+    Output("graph", "figure", allow_duplicate=True),
     Output("graph", "relayoutData"),
     Input("keyboard", "n_events"),
     State("keyboard", "event"),
